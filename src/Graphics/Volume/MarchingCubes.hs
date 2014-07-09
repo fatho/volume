@@ -1,35 +1,12 @@
-{-# LANGUAGE FunctionalDependencies, MultiParamTypeClasses, TypeFamilies #-}
-{-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
-module Graphics.Rendering.Volume.MarchingCubes where
+module Graphics.Volume.MarchingCubes where
 
-import Graphics.Rendering.Volume.MarchingCubesTables
-import Data.ScalarField.Class
+import Graphics.Volume.MarchingCubesTables
+import Numeric.ScalarField
 
 import           Control.Lens
 import           Data.Bits
 import qualified Data.Vector as V
 import           Linear
-
-import Debug.Trace
-
-data Radial f a = Radial { sphCenter :: f a, sphValue0 :: a, sphSlope :: a}
-
-data LG f a = LG { lgnormal :: f a, lgoffset :: a }
-
-instance (Metric f, Floating a) => ScalarField (LG f a) (f a) (f a) a where
-  valueAt lg pos = dot pos (lgnormal lg) + lgoffset lg
-  gradientAt lg _ = lgnormal lg
-
-instance (Metric f, Floating a) => ScalarField (Radial f a) (f a) (f a) a where
-  valueAt r pos = sphValue0 r - sphSlope r * qd pos (sphCenter r)
-  gradientAt r pos = negated $ (2 * sphSlope r) *^ (pos ^-^ sphCenter r)
-
-
-testRad :: Radial V3 Double
-testRad = Radial zero 1 1
-
-testLin :: LG V3 Double
-testLin = LG (normalize $ V3 1 1 0) (-0.5)
 
 -- | Calculates the isosurface of a scalar field in three dimensional euclidian space.
 marchingCubes :: (Enum a, Ord a, Epsilon a, Floating a, ScalarField s (V3 a) (V3 a) a)
@@ -101,7 +78,7 @@ generateMesh :: (Ord a, Floating a, Epsilon a)
 generateMesh isoLevel corners values = concatMap (vectorToList . fmap (intersections V.!)) triangles where
   -- index of cube in the lookup tables
   cubeIndex = V.ifoldl' (\idx i v -> if v ^. _w >= isoLevel then idx .|. (1 `shiftL` i) else idx) 0 values
-  triangles = traceShowId $ mcTriangles V.! cubeIndex
+  triangles = mcTriangles V.! cubeIndex
   -- indices of corners participating in the respective edges
   edges     = [(0,1), (1,2), (2,3), (3,0), (4,5), (5,6), (6,7), (7,4), (0,4), (1,5), (2,6), (3,7)]
   -- lazy vector of interpolated intersections

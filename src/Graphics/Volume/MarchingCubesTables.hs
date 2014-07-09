@@ -1,4 +1,4 @@
-module Graphics.Rendering.Volume.MarchingCubesTables
+module Graphics.Volume.MarchingCubesTables
   ( mcEdges
   , mcTriangles
   ) where
