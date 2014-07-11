@@ -67,24 +67,55 @@ main = do
   GLFW.makeContextCurrent (Just wnd)
   GLFW.setKeyCallback wnd (Just keyCallback)
   -- set nice background color
-  GL.clearColor $= GL.Color4 0.0 0.0 1.0 1.0
+  GL.clearColor $= GL.Color4 0.0 0.0 0.2 1.0
   -- enable alpha blending
   --GL.blendFunc $= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
   --GL.blend $= GL.Enabled
 
-  gameLoop wnd
+  mainLoop wnd
 
   GLFW.destroyWindow wnd
   GLFW.terminate
 
-gameLoop :: GLFW.Window -> IO ()
-gameLoop wnd = GLFW.windowShouldClose wnd >>= 
+mainLoop :: GLFW.Window -> IO ()
+mainLoop wnd = GLFW.windowShouldClose wnd >>= 
   \close -> unless close $ do
+
+    (width, height) <- GLFW.getFramebufferSize wnd
+    let ratio = fromIntegral width / fromIntegral height
+
+    GL.viewport $= (GL.Position 0 0, GL.Size (fromIntegral width) (fromIntegral height))
     GL.clear [GL.ColorBuffer, GL.DepthBuffer]
+
+    GL.matrixMode $= GL.Projection
+    GL.loadIdentity
+    --GL.ortho (negate ratio) ratio (negate 1.0) 1.0 1.0 (negate 1.0)
+    GL.perspective 80 ratio 0.1 100
+    GL.matrixMode $= GL.Modelview 0
+
+    GL.loadIdentity
+    let
+      eye    = GL.Vertex3 3.0 3.0 3.0
+      center = GL.Vertex3 0.0 0.0 0.0
+      up     = GL.Vector3 (-3.0) (-3.0) 6.0
+    GL.lookAt eye center up
+    -- this is bad, but keeps the logic of the original example I guess
+    Just t <- GLFW.getTime
+    --GL.rotate ((realToFrac t) * 50) $ (GL.Vector3 0 0 1 :: GL.Vector3 GL.GLdouble)
+
+    GL.renderPrimitive GL.Triangles $ do
+        GL.color  (GL.Color3 1 0 0 :: GL.Color3 GL.GLdouble)
+        GL.vertex (GL.Vertex3 0 0 0 :: GL.Vertex3 GL.GLdouble)
+        GL.color  (GL.Color3 0 1 0 :: GL.Color3 GL.GLdouble)
+        GL.vertex (GL.Vertex3 0 1 0 :: GL.Vertex3 GL.GLdouble)
+        GL.color  (GL.Color3 0 0 1 :: GL.Color3 GL.GLdouble)
+        GL.vertex (GL.Vertex3 1 0 0 :: GL.Vertex3 GL.GLdouble)
+
+
     GL.flush
     GLFW.swapBuffers wnd
     GLFW.pollEvents
-    gameLoop wnd
+    mainLoop wnd
 
 
 await :: Monad m => m Bool -> m ()
